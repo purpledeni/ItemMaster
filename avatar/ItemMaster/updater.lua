@@ -4,7 +4,7 @@ end
 
 local branch = 'main'
 
-local Promise = require("Promise")
+local Promise = require("ItemMaster.Promise")
 
 --Promise.awaitGet("https://randomfox.ca/floof/"):thenJson(function(json)
 --    return Promise.awaitGet(json.image)
@@ -21,12 +21,22 @@ local Promise = require("Promise")
 --    log(parseJson(data).content)-- now we can parse this as a texture, audio, etc.
 --end)
 
-local function fetch(url)
-    if url:find('https://raw.githubusercontent.com') then
+local function fetch(url, type)
+    if type == 'raw' then
         Promise.awaitGet(url)
         :thenString(function(value)
             log(value)
+        end, function(value)
+            log(value)
         end)
+    end
+end
+
+local function message(str,color,actionbar)
+    if actionbar then
+        host:setActionbar('["[IM] ",{"text":"' .. str .. '","color":"' .. color .. '"}]')
+    else
+        printJson('["[ItemMaster] : ",{"text":"' .. str .. '","color":"' .. color .. '"}]')
     end
 end
 
@@ -35,11 +45,11 @@ local function checkNetworking()
         if net:isLinkAllowed('https://api.github.com') and net:isLinkAllowed('https://raw.githubusercontent.com') then
             return true
         else
-            printJson('["[ItemMaster]",{"text":" Host \\"api.github.com\\" or \\"raw.githubusercontent.com\\"not whitelisted.","color":"red"}]')
+            message('Host \\"api.github.com\\" or \\"raw.githubusercontent.com\\" not whitelisted.', "red")
             return false
         end
     else
-        printJson('["[ItemMaster]",{"text":" Networking API disabled.","color":"red"}]')
+        message('Networking API disabled.', "red")
         return false
     end
 end
@@ -53,7 +63,7 @@ end
 
 local function fetchAssets()
     if checkNetworking() then
-        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/assets/VERSION')
+        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/assets/VERSION', 'raw')
     end
 end
 
