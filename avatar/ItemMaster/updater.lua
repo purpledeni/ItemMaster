@@ -5,6 +5,7 @@ end
 local branch = 'main'
 
 local Promise = require("ItemMaster.Promise")
+local HTTP = require("ItemMaster.http")
 
 --Promise.awaitGet("https://randomfox.ca/floof/"):thenJson(function(json)
 --    return Promise.awaitGet(json.image)
@@ -23,11 +24,13 @@ local Promise = require("ItemMaster.Promise")
 
 local function fetch(url, type)
     if type == 'raw' then
+        HTTP.get(url,function(text)
+            log(text)
+        end,'string')
+    elseif type == 'tree' then
         Promise.awaitGet(url)
-        :thenString(function(value)
-            log(value)
-        end, function(value)
-            log(value)
+        :thenJson(function(json)
+            log(json)
         end)
     end
 end
@@ -63,7 +66,8 @@ end
 
 local function fetchAssets()
     if checkNetworking() then
-        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/assets/VERSION', 'raw')
+        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/LICENSE', 'raw')
+        fetch('https://api.github.com/repos/purpledeni/ItemMaster/git/trees/main?recursive=1', 'tree')
     end
 end
 
