@@ -6,22 +6,6 @@ local branch = 'main'
 local Promise = require("ItemMaster.Promise")
 local debugmode = true
 
---local function fetch(URI, TYPE)
---    if TYPE == 'raw' then
---        Promise.awaitGet(URI)
---        :thenString(function(str)
---            print(str)
---        end)
---    elseif TYPE == 'tree' then
---        Promise.awaitGet(URI)
---        :thenJson(function(json)
---            for i, v in pairs(json.tree) do
---                log(v.path)
---            end
---        end)
---    end
---end
-
 local function message(str,color,actionbar)
     if actionbar then
         host:setActionbar('["[IM] ",{"text":"' .. str .. '","color":"' .. color .. '"}]')
@@ -52,6 +36,16 @@ local function checkVersion()
             print(str)
         end)
     end
+end
+
+local function writeByteArray(path, str)
+    local buf = data:createBuffer()
+    buf:writeByteArray(str)
+    buf:setPosition(0)
+    local dat = file:openWriteStream(path)
+    buf:writeToStream(dat)
+    dat:close()
+    buf:close()
 end
 
 local function recursiveDelete(dir,thisone)
@@ -87,8 +81,9 @@ local function fetchAssets()
                     elseif v.type == 'blob' then
                         --file:writeString()
                         Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/' .. v.path)
-                        :thenString(function(str)
-                            file:writeString('ItemMaster/' .. v.path, str)
+                        :thenByteArray(function(str)
+                            log(str)
+                            writeByteArray('ItemMaster/' .. v.path, str)
                             if debugmode then message('Written to : ItemMaster/' .. v.path, 'white') end
                         end)
                     end
@@ -100,10 +95,10 @@ local function fetchAssets()
 end
 
 
---if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
---    checkVersion()
---else
---end
+if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
+    checkVersion()
+else
+end
 
 
 fetchAssets()

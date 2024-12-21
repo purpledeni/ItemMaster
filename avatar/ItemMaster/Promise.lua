@@ -251,6 +251,16 @@ function Promise:thenString(callback, errback)
     end, errback)
 end
 
+---@param callback fun(value: string, headers: HttpHeaders): Promise?
+---@param errback? fun(reason: any): Promise?
+function Promise:thenByteArray(callback, errback)
+    return self:then_(function(stream, headers)
+        return readStreamAsync(stream, headers, function(buffer, length)
+            return buffer:readByteArray(length)
+        end):then_(callback, errback)
+    end, errback)
+end
+
 ---@param callback fun(value: any): Promise?
 ---@param errback? fun(reason: any): Promise?
 function Promise:thenJson(callback, errback)
