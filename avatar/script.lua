@@ -2,44 +2,64 @@ if not host:isHost() then
     return
 end
 
-local checkFor = {}
+local branch = 'main'
 
-local function fetch(url, type)
-    local future = net.http:request(url):method("GET"):send()
-    log(future)
-    checkFor[#checkFor + 1] = {
-        future = future,
-        type = type
-    }
-end
+local Promise = require("Promise")
 
-function events.tick()
-    for i, value in ipairs(checkFor) do
-        if value.future:isDone() then
-            local result = value.future:getValue()
-            log(result:getData(), result:getHeaders())
-            table.remove(checkFor,i)
-            i = i - 1
-        end
+--Promise.awaitGet("https://randomfox.ca/floof/"):thenJson(function(json)
+--    return Promise.awaitGet(json.image)
+--end):then64(function(data)
+--    -- `data` is base64 image data
+--end)
+
+-- a breakdown of the previous code
+--Promise.awaitGet("https://api.github.com/repos/purpledeni/ItemMaster/git/trees/main/assets?recursive=1") -- returns a Promise that sends an HTTP request and resolves when it finishes. This website returns JSON with a link to an image.
+--:thenJson(function(json) -- when the request has finished, this function is called with a table containing the body.
+--    --log(json)    
+--    return Promise.awaitGet(json.tree[2].url) -- we return a new Promise. Because my implementation supports chaining, the next function refers to this second Promise instead of the first one.
+--end):thenString(function(data) -- when the second request has finished, this function is called with base64 data. 
+--    log(parseJson(data).content)-- now we can parse this as a texture, audio, etc.
+--end)
+
+local function fetch(url)
+    if url:find('https://raw.githubusercontent.com') then
+        Promise.awaitGet(url)
+        :thenString(function(value)
+            log(value)
+        end)
     end
 end
 
-local function fetchAssets()
+local function checkNetworking()
     if net:isNetworkingAllowed() then
-        local branch = 'main'
-        if net:isLinkAllowed('https://api.github.com') then
-            fetch('https://api.github.com/repos/purpledeni/ItemMaster/git/trees/' .. branch .. '?recursive=1','table')
+        if net:isLinkAllowed('https://api.github.com') and net:isLinkAllowed('https://raw.githubusercontent.com') then
+            return true
         else
-            printJson('["[ItemMaster]",{"text":" Host \\"api.github.com\\" not whitelisted, cannot update.","color":"red"}]')
+            printJson('["[ItemMaster]",{"text":" Host \\"api.github.com\\" or \\"raw.githubusercontent.com\\"not whitelisted.","color":"red"}]')
+            return false
         end
     else
-        printJson('["[ItemMaster]",{"text":" Networking API disabled, cannot update.","color":"red"}]')
+        printJson('["[ItemMaster]",{"text":" Networking API disabled.","color":"red"}]')
+        return false
+    end
+end
+
+local function checkVersion()
+    if checkNetworking() then
+        
     end
 end
 
 
-if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION.txt') then
-    -- compare versions with github and continue from there
+local function fetchAssets()
+    if checkNetworking() then
+        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/assets/VERSION')
+    end
+end
+
+
+if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
+    checkVersion()
 else
     fetchAssets()
 end
