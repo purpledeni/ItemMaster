@@ -5,7 +5,6 @@ end
 local branch = 'main'
 
 local Promise = require("ItemMaster.Promise")
-local HTTP = require("ItemMaster.http")
 
 --Promise.awaitGet("https://randomfox.ca/floof/"):thenJson(function(json)
 --    return Promise.awaitGet(json.image)
@@ -22,15 +21,20 @@ local HTTP = require("ItemMaster.http")
 --    log(parseJson(data).content)-- now we can parse this as a texture, audio, etc.
 --end)
 
-local function fetch(url, type)
-    if type == 'raw' then
-        HTTP.get(url,function(text)
-            log(text)
-        end,'string')
-    elseif type == 'tree' then
-        Promise.awaitGet(url)
+local function fetch(URI, TYPE)
+    if TYPE == 'raw' then
+        --[[HTTP.get(URI,function(text)
+            print(text)
+        end,'string')]]
+
+        Promise.awaitGet(URI)
+        :thenString(function(str)
+            print(str)
+        end)
+    elseif TYPE == 'tree' then
+        Promise.awaitGet(URI)
         :thenJson(function(json)
-            log(json)
+            print(json)
         end)
     end
 end
@@ -66,14 +70,15 @@ end
 
 local function fetchAssets()
     if checkNetworking() then
-        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/LICENSE', 'raw')
-        fetch('https://api.github.com/repos/purpledeni/ItemMaster/git/trees/main?recursive=1', 'tree')
+        fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/main/assets/VERSION', 'raw')
+        --fetch('https://api.github.com/repos/purpledeni/ItemMaster/git/trees/main?recursive=1', 'tree')
     end
 end
 
 
 if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
     checkVersion()
+    fetchAssets()
 else
     fetchAssets()
 end
