@@ -28,15 +28,6 @@ local function checkNetworking()
     end
 end
 
-local function checkVersion()
-    if checkNetworking() then
-        --fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION', 'raw')
-        Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION')
-        :thenString(function(str)
-            print(str)
-        end)
-    end
-end
 
 local function writeByteArray(path, str)
     local buf = data:createBuffer()
@@ -48,6 +39,18 @@ local function writeByteArray(path, str)
     buf:close()
 end
 
+local function readByteArray(path)
+    local dat = file:openReadStream(path)
+    local available = dat:available() + 1
+    local buf = data:createBuffer(available)
+    buf:readFromStream(dat, available)
+    buf:setPosition(0)
+    local str = buf:readByteArray(available)
+    dat:close()
+    buf:close()
+    return str
+end
+
 local function recursiveDelete(dir,thisone)
     for _, x in ipairs(file:list(dir)) do
         if file:isDirectory(dir .. '/' .. x) then
@@ -57,6 +60,16 @@ local function recursiveDelete(dir,thisone)
         end
     end
     if thisone then file:delete(dir) end
+end
+
+local function checkVersion()
+    if checkNetworking() then
+        --fetch('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION', 'raw')
+        Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION')
+        :thenString(function(str)
+            log(tonumber(readByteArray('ItemMaster/assets/VERSION')))
+        end)
+    end
 end
 
 local function fetchAssets()
@@ -98,7 +111,7 @@ end
 if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
     checkVersion()
 else
+    fetchAssets()
 end
 
 
-fetchAssets()
