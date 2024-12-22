@@ -6,30 +6,6 @@ local branch = 'main'
 local Promise = require("ItemMaster.Promise")
 local debugmode = true
 
-local function message(str,color,actionbar)
-    if not color then color = 'white' end
-    if actionbar then
-        host:setActionbar('["[IM] ",{"text":"' .. str .. '","color":"' .. color .. '"}]')
-    else
-        printJson('["[ItemMaster] ",{"text":"' .. str .. '\n","color":"' .. color .. '"}]')
-    end
-end
-
-local function checkNetworking()
-    if net:isNetworkingAllowed() then
-        if net:isLinkAllowed('https://api.github.com') and net:isLinkAllowed('https://raw.githubusercontent.com') then
-            return true
-        else
-            message('Host \\"api.github.com\\" or \\"raw.githubusercontent.com\\" are not whitelisted.', "red")
-            return false
-        end
-    else
-        message('Networking API is disabled.', "red")
-        return false
-    end
-end
-
-
 local function writeByteArray(path, str)
     local buf = data:createBuffer()
     buf:writeByteArray(str)
@@ -51,6 +27,46 @@ local function readByteArray(path)
     buf:close()
     return str
 end
+
+local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or 0
+
+local function message(str,color,actionbar)
+    if not color then color = 'white' end
+    if actionbar then
+        local bleh = {
+            '§3[IM] ',
+            {
+                text = str,
+                color = color
+            }
+        }
+        host:setActionbar(toJson(bleh))
+    else
+        local bleh = {
+            '§3[IM v' .. localversion .. '_' .. branch .. '] ',
+            {
+                text = str .. '\n',
+                color = color
+            }
+        }
+        printJson(toJson(bleh))
+    end
+end
+
+local function checkNetworking()
+    if net:isNetworkingAllowed() then
+        if net:isLinkAllowed('https://api.github.com') and net:isLinkAllowed('https://raw.githubusercontent.com') then
+            return true
+        else
+            message('Host "api.github.com" and/or "raw.githubusercontent.com" are not whitelisted. Whitelist them and restart the avatar to update.', "red")
+        end
+    else
+        message('Networking API is disabled. Enable it and restart the avatar to update.', "red")
+    end
+    return false
+end
+
+
 
 local function recursiveDelete(dir,thisone)
     for _, x in ipairs(file:list(dir)) do
@@ -83,7 +99,7 @@ local function fetchAssets()
                         :thenByteArray(function(str)
                             --log(str)
                             writeByteArray('ItemMaster/' .. v.path, str)
-                            if debugmode then message('Written to : ItemMaster/' .. v.path) end
+                            if debugmode then message('Written to: ItemMaster/' .. v.path) end
                         end)
                     end
                     --log(v.path)
@@ -97,19 +113,51 @@ local function checkVersion()
     if checkNetworking() then
         Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION')
         :thenString(function(str)
-            local localversion = tonumber(readByteArray('ItemMaster/assets/VERSION'))
             if localversion < tonumber(str) then
-                if debugmode then message('Currently installed version (' .. localversion .. ') is outdated (' .. str .. '), updating...', "blue") end
+                if debugmode then message('Currently installed version is outdated, updating to ' .. str .. '_' .. branch .. '...') end
                 fetchAssets()
+            else
+                if debugmode then message('Currently installed version is up to date.', "white") end
             end
         end)
     end
 end
 
+local IMconfig = {}
+if file:exists('ItemMaster/config.json') then
+    IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
+end
+
+function IM_autoUpdate(bool,silent)
+    if file:exists('ItemMaster/config.json') then
+        IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
+    end
+    IMconfig.allow_autoupdate = bool
+    writeByteArray('ItemMaster/config.json',toJson(IMconfig))
+    if bool then
+        if not silent then
+            message('Auto-Update §aenabled§r, restart the avatar to check for ItemMaster updates.\nYou can disable this at any time in the §bItemMaster Settings§r or by running "§b/figura run IM_autoUpdate(false)§r" in chat.')
+        end
+    else
+        if not silent then
+            message('Auto-Update §cdisabled§r, you can enable this by running "§b/figura run IM_autoUpdate(true)§r" in chat.')
+        end
+    end
+end
+
 if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
-    checkVersion()
+    if IMconfig.allow_autoupdate then
+        checkVersion()
+    else
+        IM_autoUpdate(false,true)
+    end
 else
-    fetchAssets()
+    if IMconfig.allow_autoupdate then
+        checkVersion()
+    else
+        message('This may be your first time running ItemMaster.\nThe entire code (other than the updater) is stored outside of your avatar, but in order to use it you need to download it from Github first. You can do that manually, or by running\n"§b/figura run IM_autoUpdate(true)§r" in chat.')
+        IM_autoUpdate(false,true)
+    end
 end
 
 
