@@ -4,7 +4,7 @@ end
 
 local branch = 'main'
 local Promise = require("ItemMaster.Promise")
-local debugmode = true
+local debugmode = false
 
 local function writeByteArray(path, str)
     local buf = data:createBuffer()
@@ -28,7 +28,7 @@ local function readByteArray(path)
     return str
 end
 
-local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or 0
+local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or -1
 
 local function message(str,color,actionbar)
     if not color then color = 'white' end
@@ -43,7 +43,7 @@ local function message(str,color,actionbar)
         host:setActionbar(toJson(bleh))
     else
         local bleh = {
-            '§3[IM v' .. localversion .. '_' .. branch .. '] ',
+            '§3[IM] ',
             {
                 text = str .. '\n',
                 color = color
@@ -79,6 +79,8 @@ local function recursiveDelete(dir,thisone)
     if thisone then file:delete(dir) end
 end
 
+local leftToFetch = 0
+local totalFetch = 0
 local function fetchAssets()
     if checkNetworking() then
         recursiveDelete('ItemMaster/assets',false)
@@ -89,6 +91,9 @@ local function fetchAssets()
             end)
             for i, v in pairs(json.tree) do
                 if string.find(v.path, "^assets/") then
+                    leftToFetch = leftToFetch - 1
+                    totalFetch = totalFetch + 1
+                    message('Updating... (' .. totalFetch - leftToFetch .. '/' .. totalFetch .. ')','white',true)
                     if v.type == 'tree' then
                         if file:mkdirs('ItemMaster/' .. v.path) then
                             if debugmode then message('Created folder : ItemMaster/' .. v.path) end
@@ -100,7 +105,12 @@ local function fetchAssets()
                             --log(str)
                             writeByteArray('ItemMaster/' .. v.path, str)
                             if debugmode then message('Written to: ItemMaster/' .. v.path) end
+                            --log(leftToFetch)
                         end)
+                    end
+                    leftToFetch = leftToFetch + 1
+                    if leftToFetch == 0 then
+                        message('Updated successfully.','white',true)
                     end
                     --log(v.path)
                 end
@@ -115,6 +125,7 @@ local function checkVersion()
         :thenString(function(str)
             if localversion < tonumber(str) then
                 if debugmode then message('Currently installed version is outdated, updating to ' .. str .. '_' .. branch .. '...') end
+                localversion = str
                 fetchAssets()
             else
                 if debugmode then message('Currently installed version is up to date.', "white") end
@@ -126,6 +137,13 @@ end
 local IMconfig = {}
 if file:exists('ItemMaster/config.json') then
     IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
+end
+
+if debugmode then
+    function IM_versionDebug(num)
+        file:mkdirs('ItemMaster/assets')
+        writeByteArray('ItemMaster/assets/VERSION',tostring(num))
+    end
 end
 
 function IM_autoUpdate(bool,silent)
@@ -152,10 +170,39 @@ if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSI
         IM_autoUpdate(false,true)
     end
 else
-    if IMconfig.allow_autoupdate then
+    if IMconfig.allow_autoupdate == true then
         checkVersion()
     else
-        message('This may be your first time running ItemMaster.\nThe entire code (other than the updater) is stored outside of your avatar, but in order to use it you need to download it from Github first. You can do that manually, or by running\n"§b/figura run IM_autoUpdate(true)§r" in chat.')
+        if IMconfig.allow_autoupdate == nil then
+            message('§bThis may be your first time running ItemMaster.')
+        end
+        printJson(toJson({
+            "§3[IM] §rSince the entire code (other than the updater) is stored outside of your avatar (to not clog up space), in order to use it you need to download it from GitHub first.\nYou can ",
+            {
+                text = '§b§ndo that manually',
+                clickEvent = {
+                    action = "open_url",
+                    value = "https://github.com/purpledeni/ItemMaster"
+                },
+                hoverEvent = {
+                    action = "show_text",
+                    value = "https://github.com/purpledeni/ItemMaster\n§8(Click)"
+                }
+            },
+            ' §7(instructions in README.md)§r, or by running ',
+            {
+                text = '§b§nthis command§r',
+                clickEvent = {
+                    action = 'suggest_command',
+                    value = '/figura run IM_autoUpdate(true)'
+                },
+                hoverEvent = {
+                    action = "show_text",
+                    value = '/figura run IM_autoUpdate(true)\n§8(Click)'
+                }
+            },
+            ' in chat.'
+        }))
         IM_autoUpdate(false,true)
     end
 end
