@@ -11,7 +11,7 @@ local function message(str,color,actionbar)
     if actionbar then
         host:setActionbar('["[IM] ",{"text":"' .. str .. '","color":"' .. color .. '"}]')
     else
-        printJson('["\n[ItemMaster] ",{"text":"' .. str .. '","color":"' .. color .. '"}]')
+        printJson('["[ItemMaster] ",{"text":"' .. str .. '\n","color":"' .. color .. '"}]')
     end
 end
 
