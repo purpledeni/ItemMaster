@@ -272,16 +272,13 @@ local function writeByteArray(path, str)
     buf:close()
 end
 
+---@param path string
+---@return string
 local function readByteArray(path)
-    local dat = file:openReadStream(path)
-    local available = dat:available() + 1
-    local buf = data:createBuffer(available)
-    buf:readFromStream(dat, available)
-    buf:setPosition(0)
-    local str = buf:readByteArray(available)
-    dat:close()
-    buf:close()
-    return str
+    local stream = file:openReadStream(path)
+    local future = stream:readAsync()
+    repeat until future:isDone()
+    return future:getValue()--[[@as string]]
 end
 
 local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or -1
@@ -325,7 +322,7 @@ local function recursiveDelete(dir,thisone)
 end
 
 local function IMrun()  --Runner
-    local IM = readByteArray('ItemMaster/ItemMaster.lua')
+    local IM = readByteArray('ItemMaster/assets/ItemMaster.lua')
     local environment = {
         read = readByteArray,
         write = writeByteArray,
