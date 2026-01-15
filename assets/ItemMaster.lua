@@ -1,5 +1,13 @@
 if debugmode then message('Running successfully!') end
-message('Press [button] to open ItemMaster.',nil,true)
+
+local keys = {
+    open = keybinds:newKeybind("Open ItemMaster", IMconfig.key_open, false)
+}
+
+
+
+
+message('Press [ ' .. keys.open:getKeyName() .. ' ] to open ItemMaster.',nil,true)
 local UI = models:newPart('IMUI'):setParentType('HUD')
 
 local function localRequire(dir)

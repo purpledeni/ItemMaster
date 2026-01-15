@@ -5,6 +5,13 @@ end
 local branch = 'main'
 local debugmode = true
 
+local defaults = {
+    allow_autoupdate = false,
+    key_open = "key.keyboard.right.bracket"
+}
+
+local prettyJson = json:newBuilder() prettyJson.prettyPrinting = true
+local prettyJson = prettyJson:build()
 
 --#region Promise
 
@@ -328,6 +335,7 @@ local function IMrun()  --Runner
         write = writeByteArray,
         message = message,
         autoUpdate = IM_autoUpdate,
+        save = IM_save,
         debugmode = debugmode,
         version = localversion,
         IMconfig = IMconfig,
@@ -336,6 +344,7 @@ local function IMrun()  --Runner
     setmetatable(environment,{
         __index = _G
     })
+    --log(environment)
     load(IM,nil,environment)()
 end
 
@@ -354,21 +363,39 @@ local function checkNetworking()
     return false
 end
 
+function IM_save(jsonfile, index, value, silent)
+    local IM_file = {}
+    local IM_file_json = ""
+    if file:exists('ItemMaster/' .. jsonfile .. '.json') then
+        IM_file = parseJson(readByteArray('ItemMaster/' .. jsonfile .. '.json'))
+        if type(IM_file) ~= "table" then
+            IM_file = {}
+        end
+    end
+    IM_file[index] = value
+    IM_file_json = prettyJson:serialize(IM_file)
 
+    --printJson(IM_file_json)
+    writeByteArray('ItemMaster/' .. jsonfile ..  '.json', IM_file_json)
+    if debugmode and not silent then
+        if value ~= nil then
+            message('Wrote §a' .. tostring(value) .. '§r to §e' .. index .. '§r in §b' .. jsonfile .. '.json§r')
+        else
+            message('Removed §c' .. index .. '§r from §e' .. jsonfile .. '.json§r')
+        end
+    end
 
+    if jsonfile == "config" then
+        IMconfig = IM_file
+    end
+end
 
 function IM_autoUpdate(bool,silent)
-    if file:exists('ItemMaster/config.json') then
-        IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
-    end
-    IMconfig.allow_autoupdate = bool
-    writeByteArray('ItemMaster/config.json',toJson(IMconfig))
-    if bool then
-        if not silent then
+    IM_save("config", "allow_autoupdate", bool)
+    if not silent then
+        if bool then
             message('Auto-Update §aenabled§r, reload the avatar to check for ItemMaster updates.\nYou can disable this at any time in the §bItemMaster Settings§r or by running "§b/figura run IM_autoUpdate(false)§r" in chat.')
-        end
-    else
-        if not silent then
+        else
             message('Auto-Update §cdisabled§r, you can enable this by running "§b/figura run IM_autoUpdate(true)§r" in chat.')
         end
     end
@@ -391,6 +418,8 @@ local function fetchAssets()
                     message('Updating... (' .. totalFetch + leftToFetch .. '/' .. totalFetch .. ')','white',true)
                     if v.type == 'tree' then
                         if file:mkdirs('ItemMaster/' .. v.path) then
+                            leftToFetch = leftToFetch + 1
+                            totalFetch = totalFetch - 1
                             if debugmode then message('Created folder : ItemMaster/' .. v.path) end
                         end
                     elseif v.type == 'blob' then
@@ -399,7 +428,7 @@ local function fetchAssets()
                         :thenByteArray(function(str)
                             --log(str)
                             writeByteArray('ItemMaster/' .. v.path, str)
-                            if debugmode then message(leftToFetch .. ', Written to: ItemMaster/' .. v.path) end
+                            if debugmode then message("(" .. leftToFetch + totalFetch + 1 .. " / " .. totalFetch .. ') Written to: ItemMaster/' .. v.path) end
                             if string.find(v.path, "^assets/") then
                                 leftToFetch = leftToFetch + 1
                                 if leftToFetch == 0 then
@@ -441,17 +470,32 @@ if debugmode then
         file:mkdirs('ItemMaster/assets')
         writeByteArray('ItemMaster/assets/VERSION',tostring(num))
     end
+    message("--- Debug mode ---", "red")
 end
 
+
+local function checkDefaults()
+    IM_save("config", "none", nil, true)
+    --logTable(IMconfig)
+    for i, v in pairs(defaults) do
+        --log(IMconfig[i])
+        if IMconfig[i] == nil then
+            IM_save("config", i, v)
+        end
+    end
+end
+
+
+checkDefaults()
 
 if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
     if IMconfig.allow_autoupdate then
         checkVersion()
     else
-        IM_autoUpdate(false,true)
+        IMrun()
     end
 else
-    if IMconfig.allow_autoupdate == true then
+    if IMconfig.allow_autoupdate then
         checkVersion()
     else
         if IMconfig.allow_autoupdate == nil then
@@ -484,6 +528,5 @@ else
             },
             ' in chat.'
         }))
-        IM_autoUpdate(false,true)
     end
 end
