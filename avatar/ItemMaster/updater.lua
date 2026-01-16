@@ -288,12 +288,6 @@ local function readByteArray(path)
     return future:getValue()--[[@as string]]
 end
 
-local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or -1
-local IMconfig = {}
-if file:exists('ItemMaster/config.json') then
-    IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
-end
-
 local function message(str,color,actionbar)
     if not color then color = 'white' end
     if actionbar then
@@ -316,6 +310,25 @@ local function message(str,color,actionbar)
         printJson(toJson(bleh))
     end
 end
+
+if debugmode then
+    function IM_versionDebug(num)
+        file:mkdirs('ItemMaster/assets')
+        writeByteArray('ItemMaster/assets/VERSION',tostring(num))
+    end
+    message("--- Debug mode ---", "red")
+end
+
+local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or -1
+if debugmode then
+    message("Currently installed version is v§b" .. localversion)
+end
+
+local IMconfig = {}
+if file:exists('ItemMaster/config.json') then
+    IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
+end
+
 
 local function recursiveDelete(dir,thisone)
     for _, x in ipairs(file:list(dir)) do
@@ -345,6 +358,9 @@ local function IMrun()  --Runner
         __index = _G
     })
     --log(environment)
+    if debugmode then
+        message("Attempting to run...")
+    end
     load(IM,nil,environment)()
 end
 
@@ -450,6 +466,9 @@ local function checkVersion()
     if checkNetworking() then
         Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION')
         :thenByteArray(function(str)
+            if debugmode then
+                message('Latest version is v§b' .. str)
+            end
             if localversion < tonumber(str) then
                 if debugmode then message('Currently installed version is outdated, updating to ' .. str .. '_' .. branch .. '...') else
                     message('Updating to v' .. str .. '..', nil,true)
@@ -465,13 +484,6 @@ local function checkVersion()
 end
 
 
-if debugmode then
-    function IM_versionDebug(num)
-        file:mkdirs('ItemMaster/assets')
-        writeByteArray('ItemMaster/assets/VERSION',tostring(num))
-    end
-    message("--- Debug mode ---", "red")
-end
 
 
 local function checkDefaults()
