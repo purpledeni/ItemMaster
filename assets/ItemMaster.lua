@@ -1,18 +1,22 @@
-if debugmode then message('Running successfully!') end
+local defaults = {
+    allow_autoupdate = false,
+    key_open = "key.keyboard.right.bracket"
+}
 
 local keys = {
     open = keybinds:newKeybind("Open ItemMaster", IMconfig.key_open, false)
 }
 
-
-
-
-message('Press [ ' .. keys.open:getKeyName() .. ' ] to open ItemMaster.',nil,true)
+message('Press [ §e' .. keys.open:getKeyName() .. '§r ] to open ItemMaster.',nil,true)
 local UI = models:newPart('IMUI'):setParentType('HUD')
 
 local function localRequire(dir)
-    local thing = load(read(dir))
-    return thing()
+    local thing, err = load(read(dir))
+    if err then
+        message("An error occured while running " .. dir .. " :\n" .. err)
+    else
+        return thing()
+    end
 end
 
 local function save(index, value)
@@ -66,3 +70,8 @@ local function goto_screen(index)
         end
     end
 end
+
+
+
+
+if debugmode then message('Running successfully!') end

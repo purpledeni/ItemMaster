@@ -361,7 +361,13 @@ local function IMrun()  --Runner
     if debugmode then
         message("Attempting to run...")
     end
-    load(IM,nil,environment)()
+    local script, err = load(IM,nil,environment)
+    --log(err)
+    if not err then
+        script()
+    else
+        message("An error occured while attempting to run:\n" .. err, "red")
+    end
 end
 
 local function checkNetworking()
