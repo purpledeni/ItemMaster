@@ -1,7 +1,48 @@
+-- readByteArray = read
+-- writeByteArray = write
+-- message
+-- IM_autoUpdate = autoUpdate
+-- IM_save = save
+-- debugmode
+-- localversion = version
+-- IMconfig
+-- delete
+-- latestVersion
+
+if debugmode then message('Running successfully!') end
+
+local function localRequire(dir)
+    local thing, err = load(read(dir))
+    if err then
+        message("An error occured while running " .. dir .. " :\n" .. err)
+    else
+        if debugmode then
+            message("Loaded: §7" .. dir:gsub("/([^/]*)$", "/§f%1"))
+        end
+        return thing()
+    end
+end
+
+local base64 = localRequire('ItemMaster/assets/libraries/base64.lua')
+local loam = localRequire('ItemMaster/assets/libraries/loam.lua')
+local List = localRequire('ItemMaster/assets/libraries/List.lua')
+local NinesliceRenderer = localRequire('ItemMaster/assets/libraries/NinesliceRenderer.lua')
+
 local defaults = {
-    allow_autoupdate = false,
     key_open = "key.keyboard.right.bracket"
 }
+
+local function checkDefaults()
+    --logTable(IMconfig)
+    for i, v in pairs(defaults) do
+        --log(IMconfig[i])
+        if IMconfig[i] == nil then
+            IM_save("config", i, v)
+        end
+    end
+end
+
+checkDefaults()
 
 local keys = {
     open = keybinds:newKeybind("Open ItemMaster", IMconfig.key_open, false)
@@ -10,14 +51,6 @@ local keys = {
 message('Press [ §e' .. keys.open:getKeyName() .. '§r ] to open ItemMaster.',nil,true)
 local UI = models:newPart('IMUI'):setParentType('HUD')
 
-local function localRequire(dir)
-    local thing, err = load(read(dir))
-    if err then
-        message("An error occured while running " .. dir .. " :\n" .. err)
-    else
-        return thing()
-    end
-end
 
 local function save(index, value)
     IMconfig[index] = value
@@ -26,8 +59,6 @@ local function save(index, value)
         message('Written value "§a' .. value .. '" to setting "§b' .. index .. '§r".')
     end
 end
-
-local base64 = localRequire('ItemMaster/assets/libraries/base64.lua')
 
 local function localTexture(name, dir)
     local thing = base64.encode(read(dir))
@@ -47,31 +78,3 @@ local sprites = {
         texture = mainTexture
     }
 }
-
-local tasks = {}
-
-local UItree = {
-    main = {
-        {
-            type = 'sprite',
-            index = 'title',
-            pos = vec(0,0,0),
-            anchor = 'MC' -- middle center
-        }
-    }
-}
-
-local function goto_screen(index)
-    for _, screen in pairs(UItree[index]) do
-        for __, element in ipairs(screen) do
-            if element.type == 'sprite' then
-                
-            end
-        end
-    end
-end
-
-
-
-
-if debugmode then message('Running successfully!') end

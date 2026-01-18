@@ -1,5 +1,5 @@
 -- ItemMaster Credits --
 
-purpledeni - Main scripting and texturing
-4P5 - Promise Library and help with networking
+purpledeni - Main scripting, texturing & design
+4P5 - Promise, UI system scripts
 subcon - subcon

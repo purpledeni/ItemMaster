@@ -5,11 +5,6 @@ end
 local branch = 'main'
 local debugmode = true
 
-local defaults = {
-    allow_autoupdate = false,
-    key_open = "key.keyboard.right.bracket"
-}
-
 local prettyJson = json:newBuilder() prettyJson.prettyPrinting = true
 local prettyJson = prettyJson:build()
 
@@ -319,14 +314,47 @@ if debugmode then
     message("--- Debug mode ---", "red")
 end
 
-local localversion = file:exists('ItemMaster/assets/VERSION') and tonumber(readByteArray('ItemMaster/assets/VERSION')) or -1
+local function getVersionTable(str)
+    local wawa = {}
+    wawa.major, wawa.minor, wawa.hotfix = str:match("^(%d+)%.(%d+)%.(%d+)$")
+    wawa.major = tonumber(wawa.major)
+    wawa.minor = tonumber(wawa.minor)
+    wawa.hotfix = tonumber(wawa.hotfix)
+
+    local versionCompare = {
+        __eq = function(a, b)
+            return (a.major == b.major and a.minor == b.minor and a.hotfix == b.hotfix)
+        end,
+        __lt = function(a, b)
+            if a.major ~= b.major then
+                return a.major < b.major
+            end
+            if a.minor ~= b.minor then
+                return a.minor < b.minor
+            end
+            return a.hotfix < b.hotfix
+        end,
+
+        __tostring = function(v)
+            return v.major .. "." .. v.minor .. "." .. v.hotfix
+        end
+    }
+    setmetatable(wawa, versionCompare)
+
+    return wawa
+end
+
+
+local localversion = file:exists('ItemMaster/assets/VERSION') and getVersionTable(readByteArray('ItemMaster/assets/VERSION')) or getVersionTable("0.0.0")
 if debugmode then
-    message("Currently installed version is v§b" .. localversion)
+    message("Currently installed version is " .. (tostring(localversion) == "0.0.0" and "§cnone" or "v§b" .. tostring(localversion)))
 end
 
 local IMconfig = {}
 if file:exists('ItemMaster/config.json') then
-    IMconfig = parseJson(readByteArray('ItemMaster/config.json'))
+    local parsedConfig = parseJson(readByteArray('ItemMaster/config.json'))
+    --log(parsedConfig)
+    IMconfig = parsedConfig or {}
 end
 
 
@@ -351,6 +379,7 @@ local function IMrun()  --Runner
         save = IM_save,
         debugmode = debugmode,
         version = localversion,
+        latestVersion = latestVersion,
         IMconfig = IMconfig,
         delete = recursiveDelete
     }
@@ -468,18 +497,20 @@ local function fetchAssets()
     end
 end
 
+local latestVersion = 0
 local function checkVersion()
     if checkNetworking() then
         Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION')
         :thenByteArray(function(str)
             if debugmode then
+                latestVersion = getVersionTable(str)
                 message('Latest version is v§b' .. str)
             end
-            if localversion < tonumber(str) then
-                if debugmode then message('Currently installed version is outdated, updating to ' .. str .. '_' .. branch .. '...') else
-                    message('Updating to v' .. str .. '..', nil,true)
+            if localversion < latestVersion then
+                if debugmode then message('Currently installed version is outdated, updating to ' .. tostring(latestVersion) .. '_' .. branch .. '...') else
+                    message('Updating to v' .. tostring(latestVersion) .. '..', nil,true)
                 end
-                localversion = str
+                localversion = latestVersion
                 fetchAssets()
             else
                 if debugmode then message('Currently installed version is up to date.', "white") end
@@ -488,23 +519,6 @@ local function checkVersion()
         end)
     end
 end
-
-
-
-
-local function checkDefaults()
-    IM_save("config", "none", nil, true)
-    --logTable(IMconfig)
-    for i, v in pairs(defaults) do
-        --log(IMconfig[i])
-        if IMconfig[i] == nil then
-            IM_save("config", i, v)
-        end
-    end
-end
-
-
-checkDefaults()
 
 if not file:mkdirs('ItemMaster/assets') and file:exists('ItemMaster/assets/VERSION') then
     if IMconfig.allow_autoupdate then
