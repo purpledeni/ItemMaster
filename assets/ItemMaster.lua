@@ -37,7 +37,8 @@ local function checkDefaults()
     for i, v in pairs(defaults) do
         --log(IMconfig[i])
         if IMconfig[i] == nil then
-            IM_save("config", i, v)
+            IMconfig[i] = v
+            save("config", i, v)
         end
     end
 end
@@ -50,15 +51,6 @@ local keys = {
 
 message('Press [ §e' .. keys.open:getKeyName() .. '§r ] to open ItemMaster.',nil,true)
 local UI = models:newPart('IMUI'):setParentType('HUD')
-
-
-local function save(index, value)
-    IMconfig[index] = value
-    write('ItemMaster/config.json',toJson(IMconfig))
-    if debugmode then
-        message('Written value "§a' .. value .. '" to setting "§b' .. index .. '§r".')
-    end
-end
 
 local function localTexture(name, dir)
     local thing = base64.encode(read(dir))
