@@ -418,7 +418,7 @@ local function checkNetworking()
     return false
 end
 
-function IM_save(jsonfile, index, value, silent)
+local function IM_save(jsonfile, index, value, silent)
     local IM_file = {}
     local IM_file_json = ""
     if file:exists('ItemMaster/' .. jsonfile .. '.json') then
