@@ -418,7 +418,7 @@ local function checkNetworking()
     return false
 end
 
-local function IM_save(jsonfile, index, value, silent)
+function IM_save(jsonfile, index, value, silent)
     local IM_file = {}
     local IM_file_json = ""
     if file:exists('ItemMaster/' .. jsonfile .. '.json') then
@@ -564,7 +564,31 @@ else
                     value = '/figura run IM_autoUpdate(true)\n§8(Click)'
                 }
             },
-            ' in chat.'
+            ' in chat.\n\n§f(Make sure Networking API is enabled in the settings, and "',
+            {
+                text = "§c§napi.github.com",
+                clickEvent = {
+                    action = "copy_to_clipboard",
+                    value = "api.github.com"
+                },
+                hoverEvent = {
+                    action = "show_text",
+                    contents = "(Copy to clipboard)"
+            }
+            },  
+            "§r§f\" §cAND§f \"",        
+            {
+                text = "§c§nraw.githubusercontent.com",
+                clickEvent = {
+                    action = "copy_to_clipboard",
+                    value = "raw.githubusercontent.com"
+                },
+                hoverEvent = {
+                    action = "show_text",
+                    contents = "(Copy to clipboard)"
+                }
+            },
+            "§r§f\" are whitelisted.)"
         }))
     end
 end
