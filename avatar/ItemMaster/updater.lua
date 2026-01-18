@@ -3,7 +3,7 @@ if not host:isHost() then
 end
 
 local branch = 'main'
-local debugmode = true
+local debugmode = false
 
 local prettyJson = json:newBuilder() prettyJson.prettyPrinting = true
 local prettyJson = prettyJson:build()
@@ -337,6 +337,10 @@ local function getVersionTable(str)
 
         __tostring = function(v)
             return v.major .. "." .. v.minor .. "." .. v.hotfix
+        end,
+
+        __concat = function(a, b)
+            return tostring(a) .. tostring(b)
         end
     }
     setmetatable(wawa, versionCompare)
@@ -347,7 +351,7 @@ end
 
 local localversion = file:exists('ItemMaster/assets/VERSION') and getVersionTable(readByteArray('ItemMaster/assets/VERSION')) or getVersionTable("0.0.0")
 if debugmode then
-    message("Currently installed version is " .. (tostring(localversion) == "0.0.0" and "§cnone" or "v§b" .. tostring(localversion)))
+    message("Currently installed version is " .. (tostring(localversion) == "0.0.0" and "§cnone" or "v§b" .. localversion))
 end
 
 local IMconfig = {}
@@ -479,7 +483,7 @@ local function fetchAssets()
                         :thenByteArray(function(str)
                             --log(str)
                             writeByteArray('ItemMaster/' .. v.path, str)
-                            if debugmode then message("(" .. leftToFetch + totalFetch + 1 .. " / " .. totalFetch .. ') Written to: ItemMaster/' .. v.path) end
+                            if debugmode then message("(" .. leftToFetch + totalFetch + 1 .. " / " .. totalFetch .. ') Written to: §7ItemMaster/' .. v.path:gsub("/([^/]*)$", "/§f%1")) end
                             if string.find(v.path, "^assets/") then
                                 leftToFetch = leftToFetch + 1
                                 if leftToFetch == 0 then
@@ -502,13 +506,15 @@ local function checkVersion()
     if checkNetworking() then
         Promise.awaitGet('https://raw.githubusercontent.com/purpledeni/ItemMaster/' .. branch .. '/assets/VERSION')
         :thenByteArray(function(str)
+            
+            latestVersion = getVersionTable(str)
+            --log(str)
             if debugmode then
-                latestVersion = getVersionTable(str)
                 message('Latest version is v§b' .. str)
             end
             if localversion < latestVersion then
-                if debugmode then message('Currently installed version is outdated, updating to ' .. tostring(latestVersion) .. '_' .. branch .. '...') else
-                    message('Updating to v' .. tostring(latestVersion) .. '..', nil,true)
+                if debugmode then message('Currently installed version is outdated, updating to ' .. latestVersion .. '_' .. branch .. '...') else
+                    message('Updating to v' .. latestVersion .. '..', nil,true)
                 end
                 localversion = latestVersion
                 fetchAssets()
