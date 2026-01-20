@@ -49,6 +49,27 @@ local keys = {
     open = keybinds:newKeybind("Open ItemMaster", IMconfig.key_open, false)
 }
 
+
+local vars = {
+    isOpen = false,
+    func = {}
+}
+
+vars.func.toggle = function()
+    vars.isOpen = not vars.isOpen
+    if debugmode then
+        message("Set §eisOpen§r to §b" .. tostring(vars.isOpen))
+    end
+end
+
+
+keys.open.press = function()
+    vars.func.toggle()
+end
+
+
+
+
 message('Press [ §e' .. keys.open:getKeyName() .. '§r ] to open ItemMaster.',nil,true)
 local UI = models:newPart('IMUI'):setParentType('HUD')
 

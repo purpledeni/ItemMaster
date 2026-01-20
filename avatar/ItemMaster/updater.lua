@@ -3,7 +3,7 @@ if not host:isHost() then
 end
 
 local branch = 'main'
-local debugmode = false
+local debugmode = true
 
 local prettyJson = json:newBuilder() prettyJson.prettyPrinting = true
 local prettyJson = prettyJson:build()
